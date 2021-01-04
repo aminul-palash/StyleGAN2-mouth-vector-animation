@@ -13,8 +13,8 @@ print('Found GPU at: {}'.format(device_name))
 
 !git clone https://github.com/NVlabs/stylegan2
 
-# Commented out IPython magic to ensure Python compatibility.
-# %cd stylegan2
+# %cd stylegan2/
+
 
 import os
 import numpy as np
@@ -28,9 +28,20 @@ import dnnlib
 import dnnlib.tflib as tflib
 import pretrained_networks
 
+
 audio = {}
 fps = 60
+"""
+put your all audio file stemps inside data folder of styleGAN directory.
+I have named allfiles names as following:
+    1. 'drums.wav'
+    2. 'vocals.wav'
+    3. 'other.wav'
+    4. 'bass.wav'
+    5. 'piano.wav',
+    6. original audio file =>'dance.wav'
 
+"""
 for mp3_filename in [f for f in os.listdir('data') if f.endswith('.wav')]:
     mp3_filename = f'data/{mp3_filename}'
     wav_filename = mp3_filename[:-4] + '.wav'
@@ -53,14 +64,19 @@ for mp3_filename in [f for f in os.listdir('data') if f.endswith('.wav')]:
         audio[track_name][frame] = np.mean(signal[start:stop], axis=0)
     audio[track_name] /= max(audio[track_name])
 
-audio.keys()
-
+"""
+PLoting all audio frames track
+"""
 for track in sorted(audio.keys()):
     plt.figure(figsize=(8, 3))
     plt.title(track)
     plt.plot(audio[track])
     plt.savefig(f'data/{track}.png')
 
+"""
+loading the styleGAN2 model.
+"""
+    
 network_pkl = 'gdrive:networks/stylegan2-ffhq-config-f.pkl'
 _G, _D, Gs = pretrained_networks.load_networks(network_pkl)
 
@@ -73,6 +89,7 @@ Gs_syn_kwargs.randomize_noise = False
 Gs_syn_kwargs.minibatch_size = 4
 noise_vars = [var for name, var in Gs.components.synthesis.vars.items() if name.startswith('noise')]
 w_avg = Gs.get_var('dlatent_avg')
+
 
 def get_ws(n, frames, seed):
     filename = f'data/ws_{n}_{frames}_{seed}.npy'
@@ -102,7 +119,7 @@ def normalize_vector(v):
 
 !wget https://rolux.org/media/stylegan2/vectors/mouth_ratio.npy
 
-"""dict_keys(['drums', 'vocals', 'other', 'bass', 'piano', '', 'dance'])"""
+"""audio dict_keys(['drums', 'vocals', 'other', 'bass', 'piano', '', 'dance'])"""
 
 def render_frame(t):
     global base_index
@@ -140,4 +157,3 @@ audio_clip_v = moviepy.editor.AudioFileClip('data/vocals.wav')
 audio_clip = moviepy.editor.CompositeAudioClip([audio_clip_i, audio_clip_v])
 video_clip = video_clip.set_audio(audio_clip)
 video_clip.write_videofile(mp4_filename, fps=fps, codec='libx264', audio_codec='aac', bitrate='8M')
-
